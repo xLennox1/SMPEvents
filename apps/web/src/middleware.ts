@@ -12,9 +12,12 @@ export async function middleware(request: NextRequest) {
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (list) => {
-        list.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+     setAll: (list: {
+  name: string;
+  value: string;
+  options?: import("@supabase/ssr").CookieOptions;
+}[]) => {
+  list.forEach(({ name, value }) => request.cookies.set(name, value));
         list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
