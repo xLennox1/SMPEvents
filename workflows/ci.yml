@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Keine Geheimnisse im Repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/check-no-secrets.sh
+
+  web:
+    name: Website (Tests, Build, Secret-Check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      # Platzhalter nur für den Build – echte Schlüssel kommen nie in CI-Logs.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Nach dem ersten `npm install` package-lock.json committen, dann hier
+          # `cache: npm` + `cache-dependency-path: apps/web/package-lock.json` aktivieren
+          # und `npm install` durch `npm ci` ersetzen.
+      - name: Zufälliges Canary-Secret erzeugen (nur in dieser Job-Umgebung)
+        run: echo "SUPABASE_SECRET_KEY=sb_secret_$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: Prüfen, dass kein Secret im Browser-Bundle landet
+        run: |
+          if grep -rIl -e "$SUPABASE_SECRET_KEY" -e "SUPABASE_SECRET_KEY" .next/static; then
+            echo "FEHLER: Secret-Key oder sein Variablenname steht im Client-Bundle"; exit 1
+          fi
+          echo "OK: .next/static enthält weder den Canary-Wert noch den Variablennamen."
+
+  db:
+    name: Datenbank (Migrationen + pgTAP-Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase init
+      - run: supabase start
+      - name: pgTAP-Tests (Rechte, RLS, Geschäftsregeln)
+        run: supabase test db
+      - if: always()
+        run: supabase stop
+
+  mod:
+    name: Minecraft-Mod (Build + Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minecraft-mod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.0
+      - run: gradle build --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smpevents-mod
+          path: |
+            minecraft-mod/build/libs/*.jar
+            !minecraft-mod/build/libs/*-sources.jar
