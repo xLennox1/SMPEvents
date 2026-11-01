@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-badge: var(--badge);
+  --color-live: var(--live);
+  --color-gold: var(--gold);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Palette: Basalt (Seite), Anthrazit (Flächen), Graphit (erhöht), Signalblau (Akzent, Haken), Live-Rot, Gold nur für Premium */
+:root {
+  color-scheme: dark;
+  --background: #090b10;
+  --surface: #11141b;
+  --raised: #181c26;
+  --line: #262c3a;
+  --foreground: #e8ecf5;
+  --muted: #97a0b4;
+  --primary: #2f6bff;
+  --primary-foreground: #ffffff;
+  --badge: #3d9bff;
+  --live: #ff4b5c;
+  --gold: #f2b84b;
+  --danger: #ff7a7a;
+  --ok: #4cc38a;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  ::selection { background: color-mix(in oklab, var(--primary) 45%, transparent); }
+}
+
+@layer components {
+  .panel { @apply rounded-xl border border-line bg-surface; }
+  .field { @apply w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted; }
+  .label { @apply mb-1 block text-sm font-medium; }
+  .link { @apply text-badge underline-offset-4 hover:underline; }
+}
+
+/* Die Bühne: einziges inszeniertes Element der Startseite */
+.stage {
+  background:
+    radial-gradient(900px 380px at 88% -15%, color-mix(in oklab, var(--primary) 34%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--raised), var(--surface));
+  animation: stage-in 0.6s ease-out both;
+}
+@keyframes stage-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pulse-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.live-dot { animation: pulse-live 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

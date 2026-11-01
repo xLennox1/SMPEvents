@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "smpevents",
+  "version": "${version}",
+  "name": "SMPEvents Zahlungshinweise",
+  "description": "Erkennt konfigurierte Zahlungs-Chatnachrichten und meldet sie als unbestaetigte Hinweise an SMPEvents. Aktiviert niemals Premium.",
+  "authors": ["xLennox_Tv"],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.smpevents.mod.SMPEventsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
