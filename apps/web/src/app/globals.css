@@ -14,8 +14,8 @@
   --color-gold: var(--gold);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
-  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+   --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Palette: Basalt (Seite), Anthrazit (Flächen), Graphit (erhöht), Signalblau (Akzent, Haken), Live-Rot, Gold nur für Premium */
