@@ -1,0 +1,26 @@
+# Abhängigkeiten & Build
+node_modules/
+.next/
+.vercel/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Geheimnisse – niemals committen
+.env
+.env.*
+!.env.example
+
+# Gradle / Minecraft-Mod
+minecraft-mod/.gradle/
+minecraft-mod/build/
+minecraft-mod/run/
+minecraft-mod/.idea/
+
+# Editor / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+*.log
