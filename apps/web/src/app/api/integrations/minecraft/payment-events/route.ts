@@ -12,8 +12,9 @@ const reply = (status: number, body: Record<string, unknown>, headers: Record<st
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 
 /**
- * Nimmt Zahlungs-HINWEISE der Minecraft-Mod entgegen. Sie werden immer als "unconfirmed" gespeichert und
- * aktivieren unter keinen Umständen Premium – das tut ausschließlich ein Administrator (RPC approve_payment_submission).
+ * Nimmt Zahlungs-HINWEISE der Minecraft-Mod entgegen und speichert sie als "unconfirmed". Dieser Endpunkt vergibt selbst
+ * nie Premium. Die automatische Freigabe übernimmt ein Datenbank-Trigger, und zwar nur für Hinweise eines vertrauenswürdigen
+ * Empfänger-Tokens (Admin-Konto), zu einem offenen Antrag mit verifiziertem Minecraft-Namen und passendem Betrag.
  */
 export async function POST(request: Request) {
   let admin: ReturnType<typeof createAdminClient>;
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   // 2) Authentifizierung per persönlichem Token (in der Datenbank nur als SHA-256-Hash)
   const bearer = /^Bearer (smpe_[a-f0-9]{64})$/.exec(request.headers.get('authorization') ?? '');
   if (!bearer) return reply(401, { error: 'unauthorized' });
-  const { data: token, error: tokenError } = await admin.from('mod_ingest_tokens').select('id,user_id').eq('token_hash', sha256(bearer[1])).is('revoked_at', null).maybeSingle();
+  const { data: token, error: tokenError } = await admin.from('mod_ingest_tokens').select('id,user_id,trusted').eq('token_hash', sha256(bearer[1])).is('revoked_at', null).maybeSingle();
   if (tokenError) return reply(503, { error: 'unavailable' });
   if (!token) return reply(401, { error: 'unauthorized' });
 
@@ -47,6 +48,22 @@ export async function POST(request: Request) {
   const parsed = paymentEventSchema.safeParse(json);
   if (!parsed.success) return reply(422, { error: 'invalid_payload', fields: [...new Set(parsed.error.issues.map((i) => i.path.join('.') || '(root)'))] });
   const p = parsed.data;
+
+  // 4b) Verknüpfung Minecraft-Name <-> Konto: nur vom vertrauenswürdigen Empfänger-Token (er sieht die Flüster-Nachricht selbst).
+  //     Der Code wird weder gespeichert noch geloggt.
+  if (p.kind === 'link') {
+    if (!token.trusted) return reply(403, { error: 'trusted_token_required' });
+    if (!p.senderName || !p.code) return reply(422, { error: 'invalid_payload', fields: ['senderName', 'code'] });
+    const linked = await admin.rpc('link_minecraft_name', { p_code: p.code, p_name: p.senderName });
+    if (linked.error) {
+      const reason = linked.error.message;
+      if (reason === 'invalid_code' || reason === 'invalid_name') return reply(422, { error: reason });
+      if (reason === 'name_taken') return reply(409, { error: reason });
+      console.error('payment-events: link failed', linked.error.code);
+      return reply(503, { error: 'unavailable' });
+    }
+    return reply(200, { status: 'linked' });
+  }
 
   // 5) Zeitstempel plausibilisieren: nie in der Zukunft, höchstens 7 Tage alt
   const nowMs = Date.now();
