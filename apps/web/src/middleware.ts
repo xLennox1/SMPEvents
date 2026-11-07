@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PROTECTED = ['/chat', '/profile', '/admin', '/events/new'];
@@ -12,12 +12,10 @@ export async function middleware(request: NextRequest) {
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-     setAll: (list: {
-  name: string;
-  value: string;
-  options?: import("@supabase/ssr").CookieOptions;
-}[]) => {
-  list.forEach(({ name, value }) => request.cookies.set(name, value));
+      setAll: (list: { name: string; value: string; options?: CookieOptions }[]) => {
+        list.forEach(({ name, value }) => request.cookies.set(name, value));
+        // Wichtig: Response NACH dem Setzen der Request-Cookies neu erzeugen, sonst sieht die Seite nach einem Token-Refresh noch die alten Cookies.
+        response = NextResponse.next({ request });
         list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
