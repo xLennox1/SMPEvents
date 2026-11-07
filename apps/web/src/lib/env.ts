@@ -23,3 +23,6 @@ export const operator = () => ({
   address: process.env.NEXT_PUBLIC_OPERATOR_ADDRESS || null,
   email: process.env.NEXT_PUBLIC_OPERATOR_EMAIL || null,
 });
+
+/** Einladungslink zum Community-Discord (optional, wird von dir später eingetragen). */
+export const discordServerUrl = () => process.env.NEXT_PUBLIC_DISCORD_SERVER_URL || null;
