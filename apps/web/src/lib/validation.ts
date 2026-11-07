@@ -61,7 +61,21 @@ export const paymentEventSchema = z.object({
   currency: z.string().trim().min(1).max(16).nullable().optional(),
   rawMessage: z.string().min(1).max(512),
   observedAt: z.string().datetime({ offset: true }).optional(),
+  kind: z.enum(['payment', 'link']).optional(),
+  code: z.string().trim().regex(/^[A-Za-z0-9-]{4,32}$/).optional(),
   patternId: z.string().trim().max(64).optional(),
   modVersion: z.string().trim().max(32).optional(),
 });
 export type PaymentEventPayload = z.infer<typeof paymentEventSchema>;
+
+export const shopItemSchema = z.object({
+  id: idSchema.optional(),
+  name: z.string().trim().min(2).max(80),
+  description: z.string().trim().max(500).optional(),
+  price_points: z.coerce.number().int().min(1).max(10_000_000),
+  stock: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  max_per_user: z.coerce.number().int().min(1).max(1000).optional(),
+  sort_order: z.coerce.number().int().min(-1000).max(1000).optional(),
+});
+export const creatorCodeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9][A-Z0-9_-]{2,19}$/);
+export const minecraftNameSchema = mcName;
