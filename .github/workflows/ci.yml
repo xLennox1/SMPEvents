@@ -36,12 +36,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          # Nach dem ersten `npm install` package-lock.json committen, dann hier
-          # `cache: npm` + `cache-dependency-path: apps/web/package-lock.json` aktivieren
-          # und `npm install` durch `npm ci` ersetzen.
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
       - name: Zufälliges Canary-Secret erzeugen (nur in dieser Job-Umgebung)
         run: echo "SUPABASE_SECRET_KEY=sb_secret_$(openssl rand -hex 24)" >> "$GITHUB_ENV"
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build
       - name: Prüfen, dass kein Secret im Browser-Bundle landet
